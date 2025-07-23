@@ -1,29 +1,27 @@
 FROM python:3.11-slim
 
-# Install system packages
+# Ensure SSL certs and system dependencies are installed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     curl \
-    wget \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Manually update CA certificates
 RUN update-ca-certificates
 
 # Set working directory
 WORKDIR /app
 
-# Copy project files
+# Copy all files into container
 COPY . .
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install Python deps
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Fix for certifi CA location
-ENV SSL_CERT_FILE=$(python -m certifi)
+# Force Python to use proper cert path
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-# Start the bot
+# Start script
 CMD ["python", "main.py"]
