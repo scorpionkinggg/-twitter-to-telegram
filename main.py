@@ -4,6 +4,7 @@ import time
 import subprocess
 from dotenv import load_dotenv
 from telegram import Bot
+import snscrape.modules.twitter as sntwitter
 
 # Force SSL context for Python
 os.environ["SSL_CERT_FILE"] = certifi.where()
