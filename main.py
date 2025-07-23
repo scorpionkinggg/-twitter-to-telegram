@@ -1,20 +1,13 @@
 import os
 import time
-import ssl
-import certifi
 from telegram import Bot
 from dotenv import load_dotenv
 import snscrape.modules.twitter as sntwitter
 
-print("📦 Starting script...")  # Initial launch log
+print("📦 Starting script...")
 
-# Load .env variables
 load_dotenv()
 print("🔧 Loaded .env variables")
-
-# Force HTTPS requests (used by snscrape) to trust certifi's CA bundle
-os.environ["SSL_CERT_FILE"] = certifi.where()
-ssl_context = ssl.create_default_context(cafile=certifi.where())
 
 # === CONFIG ===
 TWITTER_USERS = [
@@ -41,7 +34,7 @@ print("🚀 Twitter-to-Telegram bot is running...")
 def fetch_latest_tweet(username):
     try:
         print(f"👀 Checking user: @{username}")
-        for tweet in sntwitter.TwitterUserScraper(username, ssl_context=ssl_context).get_items():
+        for tweet in sntwitter.TwitterUserScraper(username).get_items():
             return tweet.content, str(tweet.id)
         return None, None
     except Exception as e:
@@ -60,4 +53,4 @@ while True:
                 print(f"🚨 Failed to send Telegram message: {e}")
         else:
             print(f"⚠️ Skipping @{user} — no new tweet or fetch error.")
-    time.sleep(15)  # check every 15 seconds
+    time.sleep(15)
