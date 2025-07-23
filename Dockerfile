@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# Install system dependencies including SSL certs
+# Install system-level dependencies (including CA certs)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
@@ -9,14 +9,12 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy files
+# Copy project files into container
 COPY . /app
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set environment
-ENV PYTHONUNBUFFERED=1
-
-# Run bot
+# Default command
 CMD ["python", "main.py"]
+
