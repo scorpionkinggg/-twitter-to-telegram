@@ -31,18 +31,14 @@ seen_tweets = set()
 
 print("🚀 Twitter-to-Telegram bot is running...")
 
+import snscrape.modules.twitter as sntwitter
+
 def fetch_latest_tweet(username):
     try:
         print(f"👀 Checking user: @{username}")
-        cmd = f"snscrape --max-results 1 twitter-user '{username}'"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-
-        tweet = result.stdout.strip()
-        if tweet:
-            tweet_id = tweet.split()[-1]
-            return tweet, tweet_id
+        for tweet in sntwitter.TwitterUserScraper(username).get_items():
+            return tweet.content, str(tweet.id)
         return None, None
-
     except Exception as e:
         print(f"❌ Error scraping @{username}: {e}")
         return None, None
