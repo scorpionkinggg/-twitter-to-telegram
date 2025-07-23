@@ -1,21 +1,22 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# Install CA certs and basic deps
+# Install system dependencies including SSL certs
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
-    gnupg \
-    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
 
-# Install Python deps
-COPY requirements.txt .
+# Copy files
+COPY . /app
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
-COPY . .
+# Set environment
+ENV PYTHONUNBUFFERED=1
 
-# Start app
+# Run bot
 CMD ["python", "main.py"]
