@@ -1,18 +1,18 @@
-FROM python:3.11
+FROM python:3.11-slim
 
-WORKDIR /app
-
-# ✅ Install root SSL certs explicitly
-RUN apt-get update && \
-    apt-get install -y \
+# Install system certificates and curl dependencies
+RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     gnupg \
-    && update-ca-certificates
+    && apt-get clean
 
-COPY . .
+# Install Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Copy bot code
+COPY . /app
+WORKDIR /app
 
 CMD ["python", "main.py"]
