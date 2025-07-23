@@ -1,4 +1,5 @@
 import os
+import ssl
 import certifi
 
 # Force the correct SSL cert path
