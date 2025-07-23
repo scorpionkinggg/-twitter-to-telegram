@@ -4,7 +4,10 @@ import subprocess
 from telegram import Bot
 from dotenv import load_dotenv
 
+print("📦 Starting script...")  # Initial launch log
+
 load_dotenv()
+print("🔧 Loaded .env variables")  # Confirm .env is loaded
 
 # === CONFIG ===
 TWITTER_USERS = [
@@ -13,7 +16,16 @@ TWITTER_USERS = [
 ]
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-TARGET_CHAT_ID = int(os.getenv("TARGET_CHAT_ID"))
+TARGET_CHAT_ID = os.getenv("TARGET_CHAT_ID")
+
+print(f"🧪 BOT_TOKEN: {BOT_TOKEN}")
+print(f"🧪 TARGET_CHAT_ID: {TARGET_CHAT_ID}")
+
+if not BOT_TOKEN or not TARGET_CHAT_ID:
+    print("❌ Missing BOT_TOKEN or TARGET_CHAT_ID")
+    exit(1)
+
+TARGET_CHAT_ID = int(TARGET_CHAT_ID)
 bot = Bot(token=BOT_TOKEN)
 seen_tweets = set()
 
