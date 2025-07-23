@@ -1,31 +1,19 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-# Install certificate authorities and essential tools
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    curl \
-    gnupg \
-    libssl-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set environment variable to avoid interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Ensure certificates are up to date
-RUN update-ca-certificates
-
-# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY . /app
+# Install system deps
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy app files
+COPY . .
+
+# Install Python deps
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# Default command
+# Run your bot
 CMD ["python", "main.py"]
-
-
