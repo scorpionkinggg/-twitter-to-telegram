@@ -2,14 +2,35 @@ import os
 import time
 import ssl
 import certifi
+import subprocess
 
-# === SSL FIX ===
+# ================= SSL FIX FOR REQUESTS + SNSCRAPE =================
+
+# Set certifi for SSL
 os.environ['SSL_CERT_FILE'] = certifi.where()
 ssl._create_default_https_context = ssl.create_default_context
-print(f"🔒 Using cert file: {os.environ['SSL_CERT_FILE']}")
 
-# === Imports ===
-import snscrape.modules.twitter as sntwitter
+# Patch urllib3 + requests with certifi certs
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.poolmanager import PoolManager
+
+class CertifiSSLAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs['ssl_context'] = ssl.create_default_context(cafile=certifi.where())
+        return super().init_poolmanager(*args, **kwargs)
+
+import requests
+session = requests.Session()
+adapter = CertifiSSLAdapter()
+session.mount('https://', adapter)
+session.mount('http://', adapter)
+
+# Patch snscrape to use this requests session
+import snscrape.base
+snscrape.base._session = session
+
+# ================== REGULAR IMPORTS =====================
+
 from telegram import Bot
 from dotenv import load_dotenv
 
@@ -40,20 +61,26 @@ seen_tweets = set()
 
 print("🚀 Twitter-to-Telegram bot is running...")
 
-# === Fetch tweet via snscrape native API ===
+# === Fetch Latest Tweet ===
 def fetch_latest_tweet(username):
     try:
         print(f"👀 Checking user: @{username}")
-        scraper = sntwitter.TwitterUserScraper(username)
-        tweet = next(scraper.get_items(), None)
+        cmd = f"snscrape --max-results 1 twitter-user '{username}'"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        tweet = result.stdout.strip()
         if tweet:
-            return tweet.content, str(tweet.id)
-        return None, None
-    except Exception as e:
-        print(f"❌ Error scraping @{username}: {e}")
+            lines = tweet.splitlines()
+            tweet_text = lines[0]
+            tweet_id = tweet.split()[-1]  # crude but often works with snscrape output
+            return tweet_text, tweet_id
         return None, None
 
-# === Main loop ===
+    except Exception as e:
+        print(f"❌ Scrape error for @{username}: {e}")
+        return None, None
+
+# === Main Loop ===
 while True:
     for user in TWITTER_USERS:
         tweet_text, tweet_id = fetch_latest_tweet(user)
@@ -66,4 +93,4 @@ while True:
                 print(f"🚨 Failed to send Telegram message: {e}")
         else:
             print(f"⚠️ Skipping @{user} — no new tweet or fetch error.")
-    time.sleep(15)  # Wait before next round
+    time.sleep(15)  # Check every 15 seconds
