@@ -1,13 +1,20 @@
 import os
 import time
-import subprocess
+import ssl
+import certifi
 from telegram import Bot
 from dotenv import load_dotenv
+import snscrape.modules.twitter as sntwitter
 
 print("📦 Starting script...")  # Initial launch log
 
+# Load .env variables
 load_dotenv()
-print("🔧 Loaded .env variables")  # Confirm .env is loaded
+print("🔧 Loaded .env variables")
+
+# Force HTTPS requests (used by snscrape) to trust certifi's CA bundle
+os.environ["SSL_CERT_FILE"] = certifi.where()
+ssl_context = ssl.create_default_context(cafile=certifi.where())
 
 # === CONFIG ===
 TWITTER_USERS = [
@@ -31,12 +38,10 @@ seen_tweets = set()
 
 print("🚀 Twitter-to-Telegram bot is running...")
 
-import snscrape.modules.twitter as sntwitter
-
 def fetch_latest_tweet(username):
     try:
         print(f"👀 Checking user: @{username}")
-        for tweet in sntwitter.TwitterUserScraper(username).get_items():
+        for tweet in sntwitter.TwitterUserScraper(username, ssl_context=ssl_context).get_items():
             return tweet.content, str(tweet.id)
         return None, None
     except Exception as e:
