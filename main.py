@@ -3,20 +3,14 @@ import time
 import ssl
 import certifi
 import subprocess
-
-# Force the correct SSL cert path
-os.environ['SSL_CERT_FILE'] = certifi.where()
-
-print(f"🔒 Using cert file: {os.environ['SSL_CERT_FILE']}")
-
-import time
 import snscrape.modules.twitter as sntwitter
 from telegram import Bot
 from dotenv import load_dotenv
 
-
+# === SSL FIX ===
 os.environ['SSL_CERT_FILE'] = certifi.where()
 ssl._create_default_https_context = ssl.create_default_context
+print(f"🔒 Using cert file: {os.environ['SSL_CERT_FILE']}")
 
 # === Load environment variables ===
 print("📦 Starting script...")
@@ -51,29 +45,38 @@ def fetch_latest_tweet(username):
         cmd = f"snscrape --max-results 1 twitter-user '{username}'"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
+        if result.returncode != 0:
+            print(f"❌ Scrape error for @{username}: {result.stderr}")
+            return None, None
+
         tweet = result.stdout.strip()
         if tweet:
             lines = tweet.splitlines()
             tweet_text = lines[0]
-            tweet_id = tweet.split()[-1]  # crude but works with snscrape output
+            tweet_id = tweet.split()[-1]  # crude, works if last token is tweet ID
             return tweet_text, tweet_id
         return None, None
 
     except Exception as e:
-        print(f"❌ Error scraping @{username}: {e}")
+        print(f"❌ Exception scraping @{username}: {e}")
         return None, None
 
 # === Main loop ===
-while True:
-    for user in TWITTER_USERS:
-        tweet_text, tweet_id = fetch_latest_tweet(user)
-        if tweet_id and tweet_id not in seen_tweets:
-            seen_tweets.add(tweet_id)
-            print(f"✅ New tweet from @{user}: Posting to Telegram.")
-            try:
-                bot.send_message(chat_id=TARGET_CHAT_ID, text=f"🧵 @{user}:\n{tweet_text}")
-            except Exception as e:
-                print(f"🚨 Failed to send Telegram message: {e}")
-        else:
-            print(f"⚠️ Skipping @{user} — no new tweet or fetch error.")
-    time.sleep(15)  # Check every 15 seconds
+try:
+    while True:
+        print("🔁 Starting scrape loop...")
+        for user in TWITTER_USERS:
+            tweet_text, tweet_id = fetch_latest_tweet(user)
+            if tweet_id and tweet_id not in seen_tweets:
+                seen_tweets.add(tweet_id)
+                print(f"✅ New tweet from @{user}: Posting to Telegram.")
+                try:
+                    bot.send_message(chat_id=TARGET_CHAT_ID, text=f"🧵 @{user}:\n{tweet_text}")
+                except Exception as e:
+                    print(f"🚨 Failed to send Telegram message: {e}")
+            else:
+                print(f"⚠️ Skipping @{user} — no new tweet or fetch error.")
+        time.sleep(15)
+except Exception as e:
+    print(f"🔥 CRITICAL ERROR: {e}")
+
