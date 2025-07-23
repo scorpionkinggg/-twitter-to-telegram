@@ -1,10 +1,16 @@
-import certifi
 import os
 import time
 import subprocess
+import ssl
+import certifi
 from dotenv import load_dotenv
 from telegram import Bot
 import snscrape.modules.twitter as sntwitter
+
+# Force correct SSL cert path
+os.environ['SSL_CERT_FILE'] = certifi.where()
+ssl._create_default_https_context = ssl._create_unverified_context
+
 
 # Force SSL context for Python
 os.environ["SSL_CERT_FILE"] = certifi.where()
